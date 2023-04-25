@@ -1,5 +1,5 @@
 import random
-from flask import Flask, jsonify, render_template, request, redirect, url_for
+from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
@@ -84,6 +84,9 @@ def get_cafe_at_location():
 
         if cafe:
             return render_template("cafe.html", cafe=cafe)
+        else:
+            flash("sorry, we don't have a cafe at that location")
+            
     return render_template("search.html", form=form)
 
 
@@ -91,21 +94,25 @@ def get_cafe_at_location():
 def post_new_cafe():
     form = AddCafe()
     if form.validate_on_submit():
-        new_cafe = Cafe(
-            name=form.name.data,
-            map_url=form.map_url.data,
-            img_url=form.img_url.data,
-            location=form.location.data,
-            has_sockets=form.has_sockets.data,
-            has_toilet=form.has_toilets.data,
-            has_wifi=form.has_wifi.data,
-            can_take_calls=form.can_take_calls.data,
-            seats=form.seats.data,
-            coffee_price=form.coffee_price.data,
-        )
-        db.session.add(new_cafe)
-        db.session.commit()
-        return redirect(url_for('cafes'))
+        cafe = db.session.query(Cafe).filter_by(name=form.name.data).first()
+        if cafe:
+            flash("sorry, a cafe with that name already exists.")
+        else:
+            new_cafe = Cafe(
+                name=form.name.data,
+                map_url=form.map_url.data,
+                img_url=form.img_url.data,
+                location=form.location.data,
+                has_sockets=form.has_sockets.data,
+                has_toilet=form.has_toilets.data,
+                has_wifi=form.has_wifi.data,
+                can_take_calls=form.can_take_calls.data,
+                seats=form.seats.data,
+                coffee_price=form.coffee_price.data,
+            )
+            db.session.add(new_cafe)
+            db.session.commit()
+            return redirect(url_for('cafes'))
     return render_template("add.html", form=form)
 
 
@@ -128,6 +135,9 @@ def patch_new_data():
             with app.app_context():
                 db.session.commit()
             return render_template("cafe.html", cafe=cafe)
+        else:
+            flash("Sorry a cafe with that name isn't found in the database")
+
     return render_template("update.html", form=form)
 
 
@@ -141,6 +151,10 @@ def delete_cafe():
                 db.session.delete(cafe)
                 db.session.commit()
                 return redirect(url_for('home'))
+            else:
+                flash("Sorry a cafe with that name isn't found in the database")
+        else:
+            flash("Sorry, The key word is incorrect.")
 
 
     return render_template("delete.html", form=form)
